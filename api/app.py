@@ -321,7 +321,7 @@ import pandas as pd
 import pickle
 
 app = Flask(__name__)
-CORS(app)  # allow React frontend to access
+CORS(app, origins=["*"])  # allow React frontend to access
 
 # ------------------------------
 # Load saved model and scaler
