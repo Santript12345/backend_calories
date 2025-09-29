@@ -95,10 +95,10 @@
 # # ------------------------------
 # # Load saved model and scaler
 # # ------------------------------
-# with open("calorie_model.pkl", "rb") as f:
+# with open(r"api\calorie_model.pkl", "rb") as f:
 #     model = pickle.load(f)
 
-# with open("scaler.pkl", "rb") as f:
+# with open(r"api\scaler.pkl", "rb") as f:
 #     scaler = pickle.load(f)
 
 # # Exact features used during training
@@ -122,7 +122,9 @@
 #     "Experience_Level": "Experience_Level",
 #     "BMI": "BMI"
 # }
-
+# @app.route("/", methods=["GET"])
+# # def home():
+# #     return "✅ ML Flask server is running!"
 # # ------------------------------
 # # API route for frontend React
 # # ------------------------------
@@ -179,10 +181,10 @@
 # # ===============================
 # # Load Model and Scaler
 # # ===============================
-# with open("calorie_model.pkl", "rb") as f:
+# with open(r"api\calorie_model.pkl", "rb") as f:
 #     model = pickle.load(f)
 
-# with open("scaler.pkl", "rb") as f:
+# with open(r"api\scaler.pkl", "rb") as f:
 #     scaler = pickle.load(f)
 
 # # ===============================
@@ -407,10 +409,10 @@ app = Flask(__name__)
 CORS(app, origins=["*"])  # allow all origins
 
 # Load model & scaler
-with open("calorie_model.pkl", "rb") as f:
+with open(r"api\calorie_model.pkl", "rb") as f:
     model = pickle.load(f)
 
-with open("scaler.pkl", "rb") as f:
+with open(r"api\scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
 FEATURES = [
