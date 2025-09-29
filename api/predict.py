@@ -321,15 +321,18 @@ import pandas as pd
 import pickle
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # allow React frontend to access
 
-# Load your model and scaler
+# ------------------------------
+# Load saved model and scaler
+# ------------------------------
 with open("calorie_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 with open("scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
+# Features used by the model
 FEATURES = [
     "Age",
     "Gender",
@@ -341,22 +344,47 @@ FEATURES = [
     "Water_Intake (liters)",
     "Workout_Frequency (days/week)",
     "Experience_Level",
-    "BMI",
+    "BMI"
 ]
 
+# Map React frontend keys to model keys
+KEY_MAP = {
+    "Age": "Age",
+    "Gender": "Gender",
+    "Weight_kg": "Weight (kg)",
+    "Height_m": "Height (m)",
+    "Avg_BPM": "Avg_BPM",
+    "Session_Duration_hours": "Session_Duration (hours)",
+    "Fat_Percentage": "Fat_Percentage",
+    "Water_Intake_liters": "Water_Intake (liters)",
+    "Workout_Frequency_days_week": "Workout_Frequency (days/week)",
+    "Experience_Level": "Experience_Level",
+    "BMI": "BMI"
+}
+
+# ------------------------------
+# Home endpoint
+# ------------------------------
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "✅ ML Flask serverless server is running!"})
+
+# ------------------------------
+# Prediction endpoint
+# ------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.json
-        missing = [f for f in FEATURES if f not in data]
-        if missing:
-            return jsonify({"error": f"Missing features: {missing}"}), 400
+        # Map frontend keys to model keys
+        mapped_data = {KEY_MAP[k]: data[k] for k in data if k in KEY_MAP}
+        mapped_data['Gender'] = int(mapped_data['Gender'])
 
-        df = pd.DataFrame([data], columns=FEATURES)
-        df["Gender"] = df["Gender"].astype(int)
+        df = pd.DataFrame([mapped_data], columns=FEATURES)
         X_scaled = scaler.transform(df)
+
         per_session = float(model.predict(X_scaled)[0])
-        workout_freq = df["Workout_Frequency (days/week)"].iloc[0]
+        workout_freq = mapped_data.get("Workout_Frequency (days/week)", 1)
         per_week = per_session * workout_freq
         per_month = per_week * 4
 
@@ -365,5 +393,8 @@ def predict():
             "per_week": round(per_week, 2),
             "per_month": round(per_month, 2)
         })
+
     except Exception as e:
+        print("Error:", e)
         return jsonify({"error": str(e)}), 400
+
