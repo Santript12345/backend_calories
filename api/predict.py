@@ -251,23 +251,83 @@
 
 
 
+# from flask import Flask, request, jsonify
+# from flask_cors import CORS
+# import pandas as pd
+# import pickle
+# import os
+
+# app = Flask(__name__)
+# CORS(app)
+
+# # Load model and scaler
+# MODEL_PATH = os.path.join(os.path.dirname(__file__), "calorie_model.pkl")
+# SCALER_PATH = os.path.join(os.path.dirname(__file__), "scaler.pkl")
+
+# with open(MODEL_PATH, "rb") as f:
+#     model = pickle.load(f)
+
+# with open(SCALER_PATH, "rb") as f:
+#     scaler = pickle.load(f)
+
+# FEATURES = [
+#     "Age",
+#     "Gender",
+#     "Weight (kg)",
+#     "Height (m)",
+#     "Avg_BPM",
+#     "Session_Duration (hours)",
+#     "Fat_Percentage",
+#     "Water_Intake (liters)",
+#     "Workout_Frequency (days/week)",
+#     "Experience_Level",
+#     "BMI",
+# ]
+
+# @app.route("/", methods=["GET"])
+# def home():
+#     return "✅ ML Flask serverless function is running!"
+
+# @app.route("/", methods=["POST"])
+# def predict():
+#     try:
+#         data = request.json
+#         missing = [f for f in FEATURES if f not in data]
+#         if missing:
+#             return jsonify({"error": f"Missing features: {missing}"}), 400
+
+#         df = pd.DataFrame([data], columns=FEATURES)
+#         df["Gender"] = df["Gender"].astype(int)
+#         X_scaled = scaler.transform(df)
+#         per_session = float(model.predict(X_scaled)[0])
+#         workout_freq = df["Workout_Frequency (days/week)"].iloc[0]
+#         per_week = per_session * workout_freq
+#         per_month = per_week * 4
+
+#         return jsonify({
+#             "per_session": round(per_session, 2),
+#             "per_week": round(per_week, 2),
+#             "per_month": round(per_month, 2)
+#         })
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 400
+
+
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import pickle
-import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Load model and scaler
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "calorie_model.pkl")
-SCALER_PATH = os.path.join(os.path.dirname(__file__), "scaler.pkl")
-
-with open(MODEL_PATH, "rb") as f:
+# Load your model and scaler
+with open("calorie_model.pkl", "rb") as f:
     model = pickle.load(f)
 
-with open(SCALER_PATH, "rb") as f:
+with open("scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
 FEATURES = [
@@ -284,11 +344,7 @@ FEATURES = [
     "BMI",
 ]
 
-@app.route("/", methods=["GET"])
-def home():
-    return "✅ ML Flask serverless function is running!"
-
-@app.route("/", methods=["POST"])
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.json
@@ -309,6 +365,5 @@ def predict():
             "per_week": round(per_week, 2),
             "per_month": round(per_month, 2)
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 400
