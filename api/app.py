@@ -315,68 +315,134 @@
 
 
 
+# from flask import Flask, request, jsonify
+# from flask_cors import CORS
+# import pandas as pd
+# import pickle
+
+# app = Flask(__name__)
+# CORS(app, origins=["*"])  # allow React frontend to access
+
+# # ------------------------------
+# # Load saved model and scaler
+# # ------------------------------
+# with open("calorie_model.pkl", "rb") as f:
+#     model = pickle.load(f)
+
+# with open("scaler.pkl", "rb") as f:
+#     scaler = pickle.load(f)
+
+# # Features used by the model
+# FEATURES = [
+#     "Age",
+#     "Gender",
+#     "Weight (kg)",
+#     "Height (m)",
+#     "Avg_BPM",
+#     "Session_Duration (hours)",
+#     "Fat_Percentage",
+#     "Water_Intake (liters)",
+#     "Workout_Frequency (days/week)",
+#     "Experience_Level",
+#     "BMI"
+# ]
+
+# # Map React frontend keys to model keys
+# KEY_MAP = {
+#     "Age": "Age",
+#     "Gender": "Gender",
+#     "Weight_kg": "Weight (kg)",
+#     "Height_m": "Height (m)",
+#     "Avg_BPM": "Avg_BPM",
+#     "Session_Duration_hours": "Session_Duration (hours)",
+#     "Fat_Percentage": "Fat_Percentage",
+#     "Water_Intake_liters": "Water_Intake (liters)",
+#     "Workout_Frequency_days_week": "Workout_Frequency (days/week)",
+#     "Experience_Level": "Experience_Level",
+#     "BMI": "BMI"
+# }
+
+# # ------------------------------
+# # Home endpoint
+# # ------------------------------
+# @app.route("/", methods=["GET"])
+# def home():
+#     return jsonify({"message": "✅ ML Flask serverless server is running!"})
+
+# # ------------------------------
+# # Prediction endpoint
+# # ------------------------------
+# @app.route("/predict", methods=["POST"])
+# def predict():
+#     try:
+#         data = request.json
+#         # Map frontend keys to model keys
+#         mapped_data = {KEY_MAP[k]: data[k] for k in data if k in KEY_MAP}
+#         mapped_data['Gender'] = int(mapped_data['Gender'])
+
+#         df = pd.DataFrame([mapped_data], columns=FEATURES)
+#         X_scaled = scaler.transform(df)
+
+#         per_session = float(model.predict(X_scaled)[0])
+#         workout_freq = mapped_data.get("Workout_Frequency (days/week)", 1)
+#         per_week = per_session * workout_freq
+#         per_month = per_week * 4
+
+#         return jsonify({
+#             "per_session": round(per_session, 2),
+#             "per_week": round(per_week, 2),
+#             "per_month": round(per_month, 2)
+#         })
+
+#     except Exception as e:
+#         print("Error:", e)
+#         return jsonify({"error": str(e)}), 400
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import pickle
 
 app = Flask(__name__)
-CORS(app, origins=["*"])  # allow React frontend to access
+CORS(app, origins=["*"])  # allow all origins
 
-# ------------------------------
-# Load saved model and scaler
-# ------------------------------
+# Load model & scaler
 with open("calorie_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 with open("scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
-# Features used by the model
 FEATURES = [
-    "Age",
-    "Gender",
-    "Weight (kg)",
-    "Height (m)",
-    "Avg_BPM",
-    "Session_Duration (hours)",
-    "Fat_Percentage",
-    "Water_Intake (liters)",
-    "Workout_Frequency (days/week)",
-    "Experience_Level",
-    "BMI"
+    "Age","Gender","Weight (kg)","Height (m)","Avg_BPM",
+    "Session_Duration (hours)","Fat_Percentage","Water_Intake (liters)",
+    "Workout_Frequency (days/week)","Experience_Level","BMI"
 ]
 
-# Map React frontend keys to model keys
 KEY_MAP = {
-    "Age": "Age",
-    "Gender": "Gender",
-    "Weight_kg": "Weight (kg)",
-    "Height_m": "Height (m)",
-    "Avg_BPM": "Avg_BPM",
-    "Session_Duration_hours": "Session_Duration (hours)",
-    "Fat_Percentage": "Fat_Percentage",
-    "Water_Intake_liters": "Water_Intake (liters)",
+    "Age": "Age", "Gender": "Gender","Weight_kg": "Weight (kg)","Height_m": "Height (m)",
+    "Avg_BPM": "Avg_BPM","Session_Duration_hours": "Session_Duration (hours)",
+    "Fat_Percentage": "Fat_Percentage","Water_Intake_liters": "Water_Intake (liters)",
     "Workout_Frequency_days_week": "Workout_Frequency (days/week)",
-    "Experience_Level": "Experience_Level",
-    "BMI": "BMI"
+    "Experience_Level": "Experience_Level","BMI": "BMI"
 }
 
-# ------------------------------
-# Home endpoint
-# ------------------------------
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "✅ ML Flask serverless server is running!"})
 
-# ------------------------------
-# Prediction endpoint
-# ------------------------------
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["POST","OPTIONS"])
 def predict():
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        response = jsonify({"message":"ok"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response
+
     try:
         data = request.json
-        # Map frontend keys to model keys
         mapped_data = {KEY_MAP[k]: data[k] for k in data if k in KEY_MAP}
         mapped_data['Gender'] = int(mapped_data['Gender'])
 
@@ -388,13 +454,14 @@ def predict():
         per_week = per_session * workout_freq
         per_month = per_week * 4
 
-        return jsonify({
+        response = jsonify({
             "per_session": round(per_session, 2),
             "per_week": round(per_week, 2),
             "per_month": round(per_month, 2)
         })
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
 
     except Exception as e:
         print("Error:", e)
         return jsonify({"error": str(e)}), 400
-
