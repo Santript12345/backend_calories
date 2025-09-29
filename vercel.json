@@ -1,8 +1,8 @@
 {
-  "builds": [
-    { "src": "app.py", "use": "@vercel/python" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "app.py" }
-  ]
+  "version": 3,
+  "functions": {
+    "api/predict.py": {
+      "runtime": "python3.11"
+    }
+  }
 }
