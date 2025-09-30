@@ -400,70 +400,140 @@
 #         print("Error:", e)
 #         return jsonify({"error": str(e)}), 400
 
+# from flask import Flask, request, jsonify
+# from flask_cors import CORS
+# import pandas as pd
+# import pickle
+
+# app = Flask(__name__)
+# CORS(app, origins=["*"])  # allow all origins
+
+# # Load model & scaler
+# with open(r"api\calorie_model.pkl", "rb") as f:
+#     model = pickle.load(f)
+
+# with open(r"api\scaler.pkl", "rb") as f:
+#     scaler = pickle.load(f)
+
+# FEATURES = [
+#     "Age","Gender","Weight (kg)","Height (m)","Avg_BPM",
+#     "Session_Duration (hours)","Fat_Percentage","Water_Intake (liters)",
+#     "Workout_Frequency (days/week)","Experience_Level","BMI"
+# ]
+
+# KEY_MAP = {
+#     "Age": "Age", "Gender": "Gender","Weight_kg": "Weight (kg)","Height_m": "Height (m)",
+#     "Avg_BPM": "Avg_BPM","Session_Duration_hours": "Session_Duration (hours)",
+#     "Fat_Percentage": "Fat_Percentage","Water_Intake_liters": "Water_Intake (liters)",
+#     "Workout_Frequency_days_week": "Workout_Frequency (days/week)",
+#     "Experience_Level": "Experience_Level","BMI": "BMI"
+# }
+
+# @app.route("/", methods=["GET"])
+# def home():
+#     return jsonify({"message": "✅ ML Flask serverless server is running!"})
+
+# @app.route("/predict", methods=["POST","OPTIONS"])
+# def predict():
+#     # Handle preflight request
+#     if request.method == "OPTIONS":
+#         response = jsonify({"message":"ok"})
+#         response.headers.add("Access-Control-Allow-Origin", "*")
+#         response.headers.add("Access-Control-Allow-Headers", "*")
+#         response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+#         return response
+
+#     try:
+#         data = request.json
+#         mapped_data = {KEY_MAP[k]: data[k] for k in data if k in KEY_MAP}
+#         mapped_data['Gender'] = int(mapped_data['Gender'])
+
+#         df = pd.DataFrame([mapped_data], columns=FEATURES)
+#         X_scaled = scaler.transform(df)
+
+#         per_session = float(model.predict(X_scaled)[0])
+#         workout_freq = mapped_data.get("Workout_Frequency (days/week)", 1)
+#         per_week = per_session * workout_freq
+#         per_month = per_week * 4
+
+#         response = jsonify({
+#             "per_session": round(per_session, 2),
+#             "per_week": round(per_week, 2),
+#             "per_month": round(per_month, 2)
+#         })
+#         response.headers.add("Access-Control-Allow-Origin", "*")
+#         return response
+
+#     except Exception as e:
+#         print("Error:", e)
+#         return jsonify({"error": str(e)}), 400
+
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import pickle
 
+# ===============================
+# Initialize Flask
+# ===============================
 app = Flask(__name__)
-CORS(app, origins=["*"])  # allow all origins
+CORS(app)
 
-# Load model & scaler
-with open(r"api\calorie_model.pkl", "rb") as f:
+# ===============================
+# Load Model and Scaler
+# ===============================
+with open("api/calorie_model.pkl", "rb") as f:
     model = pickle.load(f)
 
-with open(r"api\scaler.pkl", "rb") as f:
+with open("api/scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
+# ===============================
+# Features
+# ===============================
 FEATURES = [
-    "Age","Gender","Weight (kg)","Height (m)","Avg_BPM",
-    "Session_Duration (hours)","Fat_Percentage","Water_Intake (liters)",
-    "Workout_Frequency (days/week)","Experience_Level","BMI"
+    "Age",
+    "Gender",
+    "Weight (kg)",
+    "Height (m)",
+    "Avg_BPM",
+    "Session_Duration (hours)",
+    "Fat_Percentage",
+    "Water_Intake (liters)",
+    "Workout_Frequency (days/week)",
+    "Experience_Level",
+    "BMI",
 ]
-
-KEY_MAP = {
-    "Age": "Age", "Gender": "Gender","Weight_kg": "Weight (kg)","Height_m": "Height (m)",
-    "Avg_BPM": "Avg_BPM","Session_Duration_hours": "Session_Duration (hours)",
-    "Fat_Percentage": "Fat_Percentage","Water_Intake_liters": "Water_Intake (liters)",
-    "Workout_Frequency_days_week": "Workout_Frequency (days/week)",
-    "Experience_Level": "Experience_Level","BMI": "BMI"
-}
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"message": "✅ ML Flask serverless server is running!"})
+    return "✅ ML Flask server is running on Vercel!"
 
-@app.route("/predict", methods=["POST","OPTIONS"])
+@app.route("/predict", methods=["POST"])
 def predict():
-    # Handle preflight request
-    if request.method == "OPTIONS":
-        response = jsonify({"message":"ok"})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "*")
-        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
-        return response
-
     try:
         data = request.json
-        mapped_data = {KEY_MAP[k]: data[k] for k in data if k in KEY_MAP}
-        mapped_data['Gender'] = int(mapped_data['Gender'])
+        missing = [f for f in FEATURES if f not in data]
+        if missing:
+            return jsonify({"error": f"Missing features: {missing}"}), 400
 
-        df = pd.DataFrame([mapped_data], columns=FEATURES)
-        X_scaled = scaler.transform(df)
+        input_df = pd.DataFrame([data], columns=FEATURES)
+        input_df["Gender"] = input_df["Gender"].astype(int)
 
+        X_scaled = scaler.transform(input_df)
         per_session = float(model.predict(X_scaled)[0])
-        workout_freq = mapped_data.get("Workout_Frequency (days/week)", 1)
+        workout_freq = input_df["Workout_Frequency (days/week)"].iloc[0]
         per_week = per_session * workout_freq
         per_month = per_week * 4
 
-        response = jsonify({
+        return jsonify({
             "per_session": round(per_session, 2),
             "per_week": round(per_week, 2),
             "per_month": round(per_month, 2)
         })
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        return response
 
     except Exception as e:
-        print("Error:", e)
         return jsonify({"error": str(e)}), 400
+
+# Do NOT include app.run() for Vercel
